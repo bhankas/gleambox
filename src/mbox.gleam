@@ -1,23 +1,17 @@
 import gleam/io
-import gleam/dict.{type Dict, new}
+import gleam/dict.{type Dict}
 import simplifile
 import gleam/result
 import gleam/string
 import gleam/list
 import gleam/pair
-import gleam/regex
-import gleam/function
+import gleam/regex.{type Match, Options}
 
 pub fn main() {
-  io.println("Hello from mbox!")
-
-  get_header_keys("/home/payas/Downloads/mboxtest")
+  get_headers("/home/payas/Downloads/mboxtest")
 }
 
-pub fn get_header_keys(filepath: String) -> Dict(String, String) {
-  let assert Ok(header_key_pattern) =
-    regex.compile("[^:\\s]+: ", regex.Options(True, True))
-
+pub fn get_headers(filepath: String) -> Dict(String, String) {
   filepath
   |> simplifile.read
   |> result.unwrap(or: "foo")
@@ -26,51 +20,38 @@ pub fn get_header_keys(filepath: String) -> Dict(String, String) {
   |> result.unwrap(or: #("", ""))
   // get only headers
   |> pair.first
-  |> function.tap(print)
-  // handle multi-line header values
-  |> function.tap(fix_multiline_values)
-  // |> list.map(
-  //   fn(s: String) -> String {
-  //     regex.split(dead_space, s)
-  //     |> string.join("|")
-  //   },
-  // )
-  // |> string.join(" ")
-  // |> print
-  |> regex.scan(header_key_pattern, _)
-  // get headers
-  |> list.map(fn(match) -> String {
-    match.content
-    |> string.replace(": ", "")
-  })
-  |> list.map(print)
-
-  new()
+  // fix multi-line header values
+  |> fix_multiline_values
+  |> string.split("\n")
+  // convert to dict of headers
+  |> list.map(get_header_dict)
+  |> dict.from_list
+  |> io.debug
 }
 
-fn print(s: String) -> Nil {
-  io.println("------\n" <> s <> "\n----------")
+fn get_header_dict(s: String) -> #(String, String) {
+  s
+  |> string.split_once(": ")
+  |> result.unwrap(or: #("", ""))
 }
 
 fn fix_multiline_values(s: String) -> String {
   let assert Ok(multi_line_value) =
-    regex.compile(": [^\n]+\n\\s+[^\n]+$", regex.Options(True, True))
-
-  let assert Ok(dead_space) = regex.compile("\\s+", regex.Options(True, True))
+    regex.compile(": [^\n]+\n\\s+[^\n]+$", Options(True, True))
 
   s
   |> regex.scan(multi_line_value, _)
-  |> list.map(fn(match: regex.Match) -> String {
-    match.content
-    // |> string.drop_left(2)
-    |> regex.split(dead_space, _)
-    |> string.join(" ")
-    |> string.replace(s, match.content, _)
-  })
-  |> io.debug
-  |> list.map(regex.scan(dead_space, _))
-  |> list.flatten
-  |> list.map(fn(match: regex.Match) -> String { match.content })
-  |> io.debug
-  |> string.join("||")
+  |> list.map(fn(match: Match) -> String { match.content })
+  |> list.scan(s, remove_dead_space)
+  |> list.first
+  |> result.unwrap(or: "bar")
+}
+
+fn remove_dead_space(acc: String, matched_content: String) -> String {
+  let assert Ok(dead_space) = regex.from_string("\\s+")
+
+  matched_content
+  |> regex.split(dead_space, _)
+  |> string.join(" ")
+  |> string.replace(acc, matched_content, _)
 }
