@@ -15,7 +15,7 @@ pub fn main() {
 }
 
 pub fn get_headers(filepath: String) -> Dict(String, String) {
-    let assert Ok(header_pattern) = regex.compile("^[^:]+: ", regex.Options(True, True))
+    let assert Ok(header_pattern) = regex.compile("[^:\\s]+: ", regex.Options(True, True))
 
     filepath
     |> simplifile.read
@@ -24,8 +24,14 @@ pub fn get_headers(filepath: String) -> Dict(String, String) {
     |> result.unwrap(or: #("", ""))
     |> pair.first // get only headers
     |> function.tap(io.println)
-    |> regex.split(header_pattern, _)
-    |> list.map(io.println)
+    |> regex.scan(header_pattern, _)
+    |> list.map(get_content)
+    |> list.map(io.debug)
 
     new()
+}
+
+fn get_content(match: regex.Match) -> String {
+   match.content
+   |> string.drop_right(2)
 }
