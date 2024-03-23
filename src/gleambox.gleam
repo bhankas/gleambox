@@ -14,7 +14,7 @@ pub fn parse(mboxcontents: String) -> Mail {
 }
 
 pub fn get_headers(mbox: Mail) -> Dict(String, String) {
-    mbox.headers
+  mbox.headers
 }
 
 pub fn get_header(mbox: Mail, key: String) -> Result(String, Nil) {
@@ -27,29 +27,29 @@ pub fn get_body(mbox: Mail) -> String {
 }
 
 pub fn get_from(mbox: Mail) -> Result(String, Nil) {
-    get_header(mbox, "From")
+  get_header(mbox, "From")
 }
 
 pub fn get_to(mbox: Mail) -> Result(String, Nil) {
-    get_header(mbox, "To")
+  get_header(mbox, "To")
 }
 
 pub fn get_date(mbox: Mail) -> Result(String, Nil) {
-    get_header(mbox, "Date")
+  get_header(mbox, "Date")
 }
 
 pub fn get_subject(mbox: Mail) -> Result(String, Nil) {
-    get_header(mbox, "Subject")
+  get_header(mbox, "Subject")
 }
 
 pub fn get_message_id(mbox: Mail) -> Result(String, Nil) {
-    get_header(mbox,  "Message-ID")
+  get_header(mbox, "Message-ID")
 }
 
 pub fn get_references(mbox: Mail) -> List(String) {
-    get_header(mbox, "References")
-    |> result.unwrap(or: "Error")
-    |> string.split(" ")
+  get_header(mbox, "References")
+  |> result.unwrap(or: "Error")
+  |> string.split(" ")
 }
 
 fn parse_body(mboxcontents: String) -> String {
