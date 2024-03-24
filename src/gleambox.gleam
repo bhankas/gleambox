@@ -5,48 +5,48 @@ import gleam/string
 import gleam/pair
 import gleam/regex
 
-pub type Mail {
-  Mail(headers: Dict(String, String), body: String)
+pub type MBox {
+  MBox(headers: Dict(String, String), body: String)
 }
 
-pub fn parse(mboxcontents: String) -> Mail {
-  Mail(headers: parse_headers(mboxcontents), body: parse_body(mboxcontents))
+pub fn parse(mboxcontents: String) -> MBox {
+  MBox(headers: parse_headers(mboxcontents), body: parse_body(mboxcontents))
 }
 
-pub fn get_headers(mbox: Mail) -> Dict(String, String) {
+pub fn get_headers(mbox: MBox) -> Dict(String, String) {
   mbox.headers
 }
 
-pub fn get_header(mbox: Mail, key: String) -> Result(String, Nil) {
+pub fn get_header(mbox: MBox, key: String) -> Result(String, Nil) {
   mbox.headers
   |> dict.get(key)
 }
 
-pub fn get_body(mbox: Mail) -> String {
+pub fn get_body(mbox: MBox) -> String {
   mbox.body
 }
 
-pub fn get_from(mbox: Mail) -> Result(String, Nil) {
+pub fn get_from(mbox: MBox) -> Result(String, Nil) {
   get_header(mbox, "From")
 }
 
-pub fn get_to(mbox: Mail) -> Result(String, Nil) {
+pub fn get_to(mbox: MBox) -> Result(String, Nil) {
   get_header(mbox, "To")
 }
 
-pub fn get_date(mbox: Mail) -> Result(String, Nil) {
+pub fn get_date(mbox: MBox) -> Result(String, Nil) {
   get_header(mbox, "Date")
 }
 
-pub fn get_subject(mbox: Mail) -> Result(String, Nil) {
+pub fn get_subject(mbox: MBox) -> Result(String, Nil) {
   get_header(mbox, "Subject")
 }
 
-pub fn get_message_id(mbox: Mail) -> Result(String, Nil) {
+pub fn get_message_id(mbox: MBox) -> Result(String, Nil) {
   get_header(mbox, "Message-ID")
 }
 
-pub fn get_references(mbox: Mail) -> List(String) {
+pub fn get_references(mbox: MBox) -> List(String) {
   get_header(mbox, "References")
   |> result.unwrap(or: "Error")
   |> string.split(" ")
