@@ -3,7 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/string
 import gleam/pair
-import gleam/regex.{type Match, Options}
+import gleam/regex
 
 pub type Mail {
   Mail(headers: Dict(String, String), body: String)
@@ -84,11 +84,11 @@ fn get_header_dict(s: String) -> #(String, String) {
 
 fn fix_multiline_values(s: String) -> String {
   let assert Ok(multi_line_value) =
-    regex.compile(": [^\n]+\n\\s+[^\n]+$", Options(True, True))
+    regex.compile(": [^\n]+\n\\s+[^\n]+$", regex.Options(True, True))
 
   s
   |> regex.scan(multi_line_value, _)
-  |> list.map(fn(match: Match) -> String { match.content })
+  |> list.map(fn(match) { match.content })
   |> list.scan(s, remove_dead_space)
   |> list.first
   |> result.unwrap(or: "bar")
