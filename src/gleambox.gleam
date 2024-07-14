@@ -1,12 +1,29 @@
-import gleam/result
+import birl.{type Time}
 import gleam/dict.{type Dict}
+import gleam/io
+import gleam/iterator.{type Iterator}
 import gleam/list
-import gleam/string
 import gleam/pair
 import gleam/regex
+import gleam/result
+import gleam/string
+import simplifile
 
 pub type MBox {
   MBox(headers: Dict(String, String), body: String)
+}
+
+pub type Mail {
+  Mail(
+    from: String,
+    to: List(String),
+    subject: String,
+    message_id: String,
+    date: Time,
+    body: String,
+    headers: Dict(String, String),
+  )
+  InvalidMail
 }
 
 pub fn parse(mboxcontents: String) -> MBox {
@@ -86,8 +103,8 @@ fn fix_multiline_values(s: String) -> String {
   let assert Ok(multi_line_value) =
     regex.compile(": [^\n]+\n\\s+[^\n]+$", regex.Options(True, True))
 
-  s
-  |> regex.scan(multi_line_value, _)
+  multi_line_value
+  |> regex.scan(s)
   |> list.map(fn(match) { match.content })
   |> list.scan(s, remove_dead_space)
   |> list.first
@@ -96,9 +113,72 @@ fn fix_multiline_values(s: String) -> String {
 
 fn remove_dead_space(acc: String, matched_content: String) -> String {
   let assert Ok(dead_space) = regex.from_string("\\s+")
-
-  matched_content
-  |> regex.split(dead_space, _)
+  dead_space
+  |> regex.split(matched_content)
   |> string.join(" ")
   |> string.replace(acc, matched_content, _)
+}
+
+// done
+fn mail_date(mail: Mail) -> Time {
+  case mail {
+    Mail(_, _, _, _, date, _, _) -> date
+    InvalidMail -> birl.now()
+  }
+}
+
+// done
+fn mail_from(mail: Mail) -> String {
+  case mail {
+    Mail(from, _, _, _, _, _, _) -> from
+    InvalidMail -> ""
+  }
+}
+
+// done
+fn mail_to(mail: Mail) -> List(String) {
+  case mail {
+    Mail(_, to, _, _, _, _, _) -> to
+    InvalidMail -> list.wrap("")
+  }
+}
+
+fn mail_body(mail: Mail) -> String {
+  case mail {
+    Mail(_, _, _, _, _, body, _) -> body
+    InvalidMail -> ""
+  }
+}
+
+// done
+pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
+  mbox_path
+  |> simplifile.get_files
+  |> result.lazy_unwrap(list.new)
+  |> iterator.from_list
+  |> iterator.map(read_file)
+}
+
+// done
+fn read_file(file_path: String) -> String {
+  file_path
+  |> simplifile.read
+  |> result.unwrap(or: "")
+}
+
+// done
+fn mbox_to_mail(mbox: MBox) -> Mail {
+  Mail(
+    from: mbox |> get_from |> result.unwrap(or: ""),
+    to: mbox |> get_to |> result.unwrap(or: "") |> list.wrap,
+    message_id: mbox |> get_message_id |> result.unwrap(or: ""),
+    subject: mbox |> get_subject |> result.unwrap(or: ""),
+    date: mbox
+      |> get_date
+      |> result.unwrap(or: "")
+      |> birl.parse
+      |> result.unwrap(or: birl.now()),
+    headers: mbox |> get_headers,
+    body: mbox |> get_body,
+  )
 }
