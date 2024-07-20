@@ -102,34 +102,6 @@ fn remove_dead_space(acc: String, matched_content: String) -> String {
   |> string.replace(acc, matched_content, _)
 }
 
-fn mail_date(mail: Mail) -> Result(Time, Nil) {
-  case mail {
-    Mail(_, _, _, _, date, _, _) -> date
-    InvalidMail -> Error(Nil)
-  }
-}
-
-fn mail_from(mail: Mail) -> Result(String, Nil) {
-  case mail {
-    Mail(from, _, _, _, _, _, _) -> from
-    InvalidMail -> Error(Nil)
-  }
-}
-
-fn mail_to(mail: Mail) -> Result(String, Nil) {
-  case mail {
-    Mail(_, to, _, _, _, _, _) -> to
-    InvalidMail -> Error(Nil)
-  }
-}
-
-fn mail_body(mail: Mail) -> Result(String, Nil) {
-  case mail {
-    Mail(_, _, _, _, _, body, _) -> body
-    InvalidMail -> Error(Nil)
-  }
-}
-
 pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
   mbox_path
   |> simplifile.get_files
