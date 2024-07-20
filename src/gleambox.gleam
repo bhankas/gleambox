@@ -11,20 +11,21 @@ import simplifile
 
 pub type MBox {
   MBox(headers: Dict(String, String), body: String)
-  InvalidMBox(path: String)
+  InvalidMBox
 }
 
 pub type Mail {
   Mail(
     from: Result(String, Nil),
-    to: Result(String, Nil), // TODO: convert to List(String)
+    to: Result(String, Nil),
+    // TODO: convert to List(String)
     subject: Result(String, Nil),
     message_id: Result(String, Nil),
     date: Result(Time, Nil),
     body: Result(String, Nil),
     headers: Result(Dict(String, String), Nil),
   )
-  InvalidMail(path: String)
+  InvalidMail
 }
 
 pub fn parse(mboxcontents: String) -> MBox {
@@ -32,15 +33,15 @@ pub fn parse(mboxcontents: String) -> MBox {
   let body = parse_body(mboxcontents)
 
   case headers, body {
-
+    Ok(parsed_headers), Ok(parsed_body) ->
+      MBox(headers: parsed_headers, body: parsed_body)
+    _, _ -> InvalidMBox
   }
-
-  MBox(headers: parse_headers(mboxcontents), body: parse_body(mboxcontents))
 }
 
 pub fn get_headers(mbox: MBox) -> Result(Dict(String, String), Nil) {
   case mbox {
-    InvalidMBox(_) -> Error(Nil)
+    InvalidMBox -> Error(Nil)
     MBox(headers, _) -> Ok(headers)
   }
 }
@@ -48,32 +49,31 @@ pub fn get_headers(mbox: MBox) -> Result(Dict(String, String), Nil) {
 pub fn get_header(mbox: MBox, key: String) -> Result(String, Nil) {
   case mbox {
     MBox(headers, _) -> headers |> dict.get(key)
-    InvalidMBox(_) -> Error(Nil)
+    InvalidMBox -> Error(Nil)
   }
 }
 
-fn parse_body(mboxcontents: String) -> String {
-  mboxcontents
+fn parse_body(mboxcontents: String) -> Result(String, Nil) {
   // split headers from body
-  |> string.split_once("\n\n")
-  |> result.unwrap(or: #("", ""))
-  // get only body
-  |> pair.second
+  case string.split_once(mboxcontents, "\n\n") {
+    Ok(pair) -> pair.second(pair) |> Ok
+    Error(_) -> Error(Nil)
+  }
 }
 
-fn parse_headers(mboxcontents: String) -> Dict(String, String) {
-  mboxcontents
-  // split headers from body
-  |> string.split_once("\n\n")
-  |> result.unwrap(or: #("", ""))
-  // get only headers
-  |> pair.first
-  // fix multi-line header values
-  |> fix_multiline_values
-  |> string.split("\n")
-  // convert to dict of headers
-  |> list.map(get_header_dict)
-  |> dict.from_list
+fn parse_headers(mboxcontents: String) -> Result(Dict(String, String), Nil) {
+  case string.split_once(mboxcontents, "\n\n") {
+    Ok(pair) ->
+      pair.first(pair)
+      // fix multi-line header values
+      |> fix_multiline_values
+      |> string.split("\n")
+      // convert to dict of headers
+      |> list.map(get_header_dict)
+      |> dict.from_list
+      |> Ok
+    Error(_) -> Error(Nil)
+  }
 }
 
 fn get_header_dict(s: String) -> #(String, String) {
@@ -102,38 +102,34 @@ fn remove_dead_space(acc: String, matched_content: String) -> String {
   |> string.replace(acc, matched_content, _)
 }
 
-// done
 fn mail_date(mail: Mail) -> Result(Time, Nil) {
   case mail {
     Mail(_, _, _, _, date, _, _) -> date
-    InvalidMail(_) -> Error(Nil)
+    InvalidMail -> Error(Nil)
   }
 }
 
-// done
 fn mail_from(mail: Mail) -> Result(String, Nil) {
   case mail {
     Mail(from, _, _, _, _, _, _) -> from
-    InvalidMail(_) -> Error(Nil)
+    InvalidMail -> Error(Nil)
   }
 }
 
-// done
 fn mail_to(mail: Mail) -> Result(String, Nil) {
   case mail {
     Mail(_, to, _, _, _, _, _) -> to
-    InvalidMail(_) -> Error(Nil)
+    InvalidMail -> Error(Nil)
   }
 }
 
 fn mail_body(mail: Mail) -> Result(String, Nil) {
   case mail {
     Mail(_, _, _, _, _, body, _) -> body
-    InvalidMail(_) -> Error(Nil)
+    InvalidMail -> Error(Nil)
   }
 }
 
-// done
 pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
   mbox_path
   |> simplifile.get_files
@@ -142,17 +138,15 @@ pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
   |> iterator.map(read_file)
 }
 
-// done
 fn read_file(file_path: String) -> String {
   file_path
   |> simplifile.read
   |> result.unwrap(or: "")
 }
 
-// done
 fn mbox_to_mail(mbox: MBox) -> Mail {
   case mbox {
-    InvalidMBox(path) -> InvalidMail(path)
+    InvalidMBox -> InvalidMail
     MBox(headers, body) ->
       Mail(
         from: dict.get(headers, "From"),
