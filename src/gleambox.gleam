@@ -110,6 +110,13 @@ pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
   |> iterator.map(read_file)
 }
 
+// TODO: better error
+pub fn maildir_iterate(maildir_path: String) -> Iterator(#(String, String)) {
+  case simplifile.get_files(maildir_path) {
+    Ok(maillist) -> iterator.from_list(maillist) |> iterator.map(fn(path) { #(path, read_file(path)) })
+    Error(_) -> #("", "") |> list.wrap |> iterator.from_list
+  }
+}
 fn read_file(file_path: String) -> String {
   file_path
   |> simplifile.read
