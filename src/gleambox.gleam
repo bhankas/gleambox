@@ -1,6 +1,6 @@
 import birl.{type Time}
 import gleam/dict.{type Dict}
-import gleam/io
+// import gleam/io
 import gleam/iterator.{type Iterator}
 import gleam/list
 import gleam/pair
@@ -117,6 +117,21 @@ pub fn maildir_iterate(maildir_path: String) -> Iterator(#(String, String)) {
     Error(_) -> #("", "") |> list.wrap |> iterator.from_list
   }
 }
+
+// pub fn main() {
+//   maildir_iterate("/home/payas/.mail/Gmail/[Gmail]/All Mail/cur")
+//   |> iterator.each(fn(mboxpair) {
+//     case parse(pair.second(mboxpair)) {
+//       InvalidMBox -> io.debug("ERR MBOX: " <> pair.first(mboxpair))
+//       MBox(headers, body) ->
+//         case mbox_to_mail(MBox(headers, body)) {
+//           InvalidMail -> io.debug("ERR MAIL: " <> pair.first(mboxpair))
+//           _ -> io.debug("SUCCESS: " <> pair.first(mboxpair))
+//         }
+//     }
+//   })
+// }
+
 fn read_file(file_path: String) -> String {
   file_path
   |> simplifile.read
