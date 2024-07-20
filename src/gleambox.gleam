@@ -1,6 +1,5 @@
 import birl.{type Time}
 import gleam/dict.{type Dict}
-// import gleam/io
 import gleam/iterator.{type Iterator}
 import gleam/list
 import gleam/pair
@@ -8,6 +7,8 @@ import gleam/regex
 import gleam/result
 import gleam/string
 import simplifile
+
+// import gleam/io
 
 pub type MBox {
   MBox(headers: Dict(String, String), body: String)
@@ -39,17 +40,10 @@ pub fn parse_mbox(mboxcontents: String) -> MBox {
   }
 }
 
-pub fn get_headers(mbox: MBox) -> Result(Dict(String, String), Nil) {
+fn get_headers(mbox: MBox) -> Result(Dict(String, String), Nil) {
   case mbox {
     InvalidMBox -> Error(Nil)
     MBox(headers, _) -> Ok(headers)
-  }
-}
-
-pub fn get_header(mbox: MBox, key: String) -> Result(String, Nil) {
-  case mbox {
-    MBox(headers, _) -> headers |> dict.get(key)
-    InvalidMBox -> Error(Nil)
   }
 }
 
@@ -100,14 +94,6 @@ fn remove_dead_space(acc: String, matched_content: String) -> String {
   |> regex.split(matched_content)
   |> string.join(" ")
   |> string.replace(acc, matched_content, _)
-}
-
-pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
-  mbox_path
-  |> simplifile.get_files
-  |> result.lazy_unwrap(list.new)
-  |> iterator.from_list
-  |> iterator.map(read_file)
 }
 
 // TODO: better error
