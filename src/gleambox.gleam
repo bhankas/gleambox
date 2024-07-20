@@ -11,62 +11,45 @@ import simplifile
 
 pub type MBox {
   MBox(headers: Dict(String, String), body: String)
+  InvalidMBox(path: String)
 }
 
 pub type Mail {
   Mail(
-    from: String,
-    to: List(String),
-    subject: String,
-    message_id: String,
-    date: Time,
-    body: String,
-    headers: Dict(String, String),
+    from: Result(String, Nil),
+    to: Result(String, Nil), // TODO: convert to List(String)
+    subject: Result(String, Nil),
+    message_id: Result(String, Nil),
+    date: Result(Time, Nil),
+    body: Result(String, Nil),
+    headers: Result(Dict(String, String), Nil),
   )
-  InvalidMail
+  InvalidMail(path: String)
 }
 
 pub fn parse(mboxcontents: String) -> MBox {
+  let headers = parse_headers(mboxcontents)
+  let body = parse_body(mboxcontents)
+
+  case headers, body {
+
+  }
+
   MBox(headers: parse_headers(mboxcontents), body: parse_body(mboxcontents))
 }
 
-pub fn get_headers(mbox: MBox) -> Dict(String, String) {
-  mbox.headers
+pub fn get_headers(mbox: MBox) -> Result(Dict(String, String), Nil) {
+  case mbox {
+    InvalidMBox(_) -> Error(Nil)
+    MBox(headers, _) -> Ok(headers)
+  }
 }
 
 pub fn get_header(mbox: MBox, key: String) -> Result(String, Nil) {
-  mbox.headers
-  |> dict.get(key)
-}
-
-pub fn get_body(mbox: MBox) -> String {
-  mbox.body
-}
-
-pub fn get_from(mbox: MBox) -> Result(String, Nil) {
-  get_header(mbox, "From")
-}
-
-pub fn get_to(mbox: MBox) -> Result(String, Nil) {
-  get_header(mbox, "To")
-}
-
-pub fn get_date(mbox: MBox) -> Result(String, Nil) {
-  get_header(mbox, "Date")
-}
-
-pub fn get_subject(mbox: MBox) -> Result(String, Nil) {
-  get_header(mbox, "Subject")
-}
-
-pub fn get_message_id(mbox: MBox) -> Result(String, Nil) {
-  get_header(mbox, "Message-ID")
-}
-
-pub fn get_references(mbox: MBox) -> List(String) {
-  get_header(mbox, "References")
-  |> result.unwrap(or: "Error")
-  |> string.split(" ")
+  case mbox {
+    MBox(headers, _) -> headers |> dict.get(key)
+    InvalidMBox(_) -> Error(Nil)
+  }
 }
 
 fn parse_body(mboxcontents: String) -> String {
@@ -120,33 +103,33 @@ fn remove_dead_space(acc: String, matched_content: String) -> String {
 }
 
 // done
-fn mail_date(mail: Mail) -> Time {
+fn mail_date(mail: Mail) -> Result(Time, Nil) {
   case mail {
     Mail(_, _, _, _, date, _, _) -> date
-    InvalidMail -> birl.now()
+    InvalidMail(_) -> Error(Nil)
   }
 }
 
 // done
-fn mail_from(mail: Mail) -> String {
+fn mail_from(mail: Mail) -> Result(String, Nil) {
   case mail {
     Mail(from, _, _, _, _, _, _) -> from
-    InvalidMail -> ""
+    InvalidMail(_) -> Error(Nil)
   }
 }
 
 // done
-fn mail_to(mail: Mail) -> List(String) {
+fn mail_to(mail: Mail) -> Result(String, Nil) {
   case mail {
     Mail(_, to, _, _, _, _, _) -> to
-    InvalidMail -> list.wrap("")
+    InvalidMail(_) -> Error(Nil)
   }
 }
 
-fn mail_body(mail: Mail) -> String {
+fn mail_body(mail: Mail) -> Result(String, Nil) {
   case mail {
     Mail(_, _, _, _, _, body, _) -> body
-    InvalidMail -> ""
+    InvalidMail(_) -> Error(Nil)
   }
 }
 
@@ -168,17 +151,20 @@ fn read_file(file_path: String) -> String {
 
 // done
 fn mbox_to_mail(mbox: MBox) -> Mail {
-  Mail(
-    from: mbox |> get_from |> result.unwrap(or: ""),
-    to: mbox |> get_to |> result.unwrap(or: "") |> list.wrap,
-    message_id: mbox |> get_message_id |> result.unwrap(or: ""),
-    subject: mbox |> get_subject |> result.unwrap(or: ""),
-    date: mbox
-      |> get_date
-      |> result.unwrap(or: "")
-      |> birl.parse
-      |> result.unwrap(or: birl.now()),
-    headers: mbox |> get_headers,
-    body: mbox |> get_body,
-  )
+  case mbox {
+    InvalidMBox(path) -> InvalidMail(path)
+    MBox(headers, body) ->
+      Mail(
+        from: dict.get(headers, "From"),
+        to: dict.get(headers, "To"),
+        message_id: dict.get(headers, "Message-ID"),
+        subject: dict.get(headers, "Subject"),
+        date: case dict.get(headers, "Date") {
+          Ok(date_str) -> birl.parse(date_str)
+          Error(_) -> Error(Nil)
+        },
+        headers: mbox |> get_headers,
+        body: Ok(body),
+      )
+  }
 }
