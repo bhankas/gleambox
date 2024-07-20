@@ -28,7 +28,7 @@ pub type Mail {
   InvalidMail
 }
 
-pub fn parse(mboxcontents: String) -> MBox {
+pub fn parse_mbox(mboxcontents: String) -> MBox {
   let headers = parse_headers(mboxcontents)
   let body = parse_body(mboxcontents)
 
@@ -113,7 +113,9 @@ pub fn maildir_iterator(mbox_path: String) -> Iterator(String) {
 // TODO: better error
 pub fn maildir_iterate(maildir_path: String) -> Iterator(#(String, String)) {
   case simplifile.get_files(maildir_path) {
-    Ok(maillist) -> iterator.from_list(maillist) |> iterator.map(fn(path) { #(path, read_file(path)) })
+    Ok(maillist) ->
+      iterator.from_list(maillist)
+      |> iterator.map(fn(path) { #(path, read_file(path)) })
     Error(_) -> #("", "") |> list.wrap |> iterator.from_list
   }
 }
@@ -136,6 +138,13 @@ fn read_file(file_path: String) -> String {
   file_path
   |> simplifile.read
   |> result.unwrap(or: "")
+}
+
+pub fn parse_mail(mboxcontents: String) -> Mail {
+  case parse_mbox(mboxcontents) {
+    InvalidMBox -> InvalidMail
+    MBox(headers, body) -> mbox_to_mail(MBox(headers, body))
+  }
 }
 
 fn mbox_to_mail(mbox: MBox) -> Mail {
