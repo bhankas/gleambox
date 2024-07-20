@@ -10,26 +10,12 @@ WARNING: This library is a personal project to learn Gleam. It is *extremely* in
 ```sh
 gleam add mbox
 ```
-```gleam
-import gleambox
-import simplifile
 
-pub fn main() {
-  let mboxcontents =
-    "/path/to/file"
-    |> simplifile.read
-    |> result.unwrap(or: "")
+TODOs:
 
-  mboxcontents
-  |> gleambox.get_headers
-  |> dict.to_list
-  |> list.map(io.debug)
-
-  mboxcontents
-  |> gleambox.get_body
-  |> io.println
-}
-```
+- [ ] Add example
+- [ ] Better error propagation
+- [ ] Handle multi-part MIME messages
 
 Further documentation can be found at <https://hexdocs.pm/gleambox>.
 
